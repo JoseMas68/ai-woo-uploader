@@ -4,8 +4,11 @@
   "description": "��#\u0000 \u0000A\u0000I\u0000 \u0000W\u0000o\u0000o\u0000C\u0000o\u0000m\u0000m\u0000e\u0000r\u0000c\u0000e\u0000 \u0000P\u0000r\u0000o\u0000d\u0000u\u0000c\u0000t\u0000 \u0000U\u0000p\u0000l\u0000o\u0000a\u0000d\u0000e\u0000r\u0000\r\u0000 \u0000",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node src/cli.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "cli": "ts-node src/scripts/cli.ts"
   },
   "repository": {
     "type": "git",
@@ -19,13 +22,23 @@
   },
   "homepage": "https://github.com/JoseMas68/ai-woo-uploader#readme",
   "dependencies": {
+    "@woocommerce/woocommerce-rest-api": "^1.0.2",
     "csv-stringify": "^6.6.0",
     "dotenv": "^17.2.3",
+    "next": "^16.0.3",
     "openai": "^6.9.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^24.10.1",
+    "@types/react": "^19.2.6",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.22",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

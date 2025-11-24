@@ -1,14 +1,14 @@
-import { parseProductDescription } from './llm';
-import { generateCSV } from './csv';
 import fs from 'fs';
 import path from 'path';
+import { parseProductDescription } from '../lib/llm';
+import { generateCSV } from '../lib/csv';
 
 async function main() {
     const description = process.argv[2];
 
     if (!description) {
         console.error("Please provide a product description as an argument.");
-        console.error('Usage: npm start "Your product description here"');
+        console.error('Usage: npm run cli -- "Your product description here"');
         process.exit(1);
     }
 
