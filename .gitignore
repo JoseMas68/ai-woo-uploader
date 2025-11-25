@@ -3,3 +3,7 @@ node_modules
 dist
 .DS_Store
 .next
+
+# Deployment files con información sensible
+DEPLOYMENT-VPS.md
+server-config.txt
