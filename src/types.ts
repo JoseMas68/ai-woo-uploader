@@ -49,3 +49,7 @@ export type AttributeOverride = {
     visible: boolean;
     variation: boolean;
 };
+
+export interface SplitOptions {
+    allowHierarchy?: boolean;
+}
