@@ -1,12 +1,15 @@
 import WooCommerceRestApi from "@woocommerce/woocommerce-rest-api";
 import { Product } from "./schema";
+import { WooSettings } from "../types/user";
 
-const api = new WooCommerceRestApi({
-    url: process.env.WOOCOMMERCE_URL || "",
-    consumerKey: process.env.WOOCOMMERCE_CONSUMER_KEY || "",
-    consumerSecret: process.env.WOOCOMMERCE_CONSUMER_SECRET || "",
-    version: "wc/v3",
-});
+const getApi = (settings?: WooSettings) => {
+    return new WooCommerceRestApi({
+        url: settings?.storeUrl || process.env.WOOCOMMERCE_URL || "",
+        consumerKey: settings?.consumerKey || process.env.WOOCOMMERCE_CONSUMER_KEY || "",
+        consumerSecret: settings?.consumerSecret || process.env.WOOCOMMERCE_CONSUMER_SECRET || "",
+        version: (settings?.apiVersion || "wc/v3") as any,
+    });
+};
 
 /**
  * Helper to split a string (comma‑separated or hierarchical using '>') into an array of trimmed strings.
@@ -34,7 +37,7 @@ const toSlug = (input: string): string => {
     return normalized || input.trim().toLowerCase().replace(/\s+/g, "-");
 };
 
-const ensureTerms = async (endpoint: "products/categories" | "products/tags", names: string[]): Promise<number[]> => {
+const ensureTerms = async (api: any, endpoint: "products/categories" | "products/tags", names: string[]): Promise<number[]> => {
     const ids: number[] = [];
     const seen = new Set<string>();
 
@@ -113,14 +116,16 @@ const isImageReachable = async (url: string): Promise<boolean> => {
     }
 };
 
-export async function createProduct(product: Product) {
+export async function createProduct(product: Product, settings?: WooSettings) {
+    const api = getApi(settings);
+
     const categoriesArray = Array.from(new Set(parseStringArray(product.categories)));
     const tagsArray = Array.from(new Set(parseStringArray(product.tags)));
     const imagesRawArray = parseStringArray(product.images);
 
     const [categoryIds, tagIds] = await Promise.all([
-        ensureTerms("products/categories", categoriesArray),
-        ensureTerms("products/tags", tagsArray),
+        ensureTerms(api, "products/categories", categoriesArray),
+        ensureTerms(api, "products/tags", tagsArray),
     ]);
 
     // Filter out unreachable images – keep only those that respond with OK.
@@ -156,10 +161,10 @@ export async function createProduct(product: Product) {
         weight: product.weight,
         dimensions: hasDimensions
             ? {
-                  length: product.dimensions?.length,
-                  width: product.dimensions?.width,
-                  height: product.dimensions?.height,
-              }
+                length: product.dimensions?.length,
+                width: product.dimensions?.width,
+                height: product.dimensions?.height,
+            }
             : undefined,
         attributes: product.attributes?.map((attr) => ({
             name: attr.name,

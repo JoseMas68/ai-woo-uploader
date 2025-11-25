@@ -1,9 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
+import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
 import ChatInterface from '../components/ChatInterface';
 import ProductResult from '../components/ProductResult';
+import SettingsModal from '../components/settings/SettingsModal';
+import SettingsOnboarding from '../components/settings/SettingsOnboarding';
 import { ConversationStep, ProductData } from '../types';
 import {
     splitInputList,
@@ -66,6 +71,21 @@ const initialProductData: ProductData = {
 const initialMessage = 'Voy a ayudarte a crear un producto nuevo. Empecemos por lo básico. ¿Cuál es el título del producto?';
 
 export default function Home() {
+    const { user, isLoading, logout } = useAuth();
+    const { settings } = useSettings();
+    const router = useRouter();
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [skipConfig, setSkipConfig] = useState(false);
+
+    // Determine if WooCommerce settings are complete
+    const settingsComplete = !!(settings?.woo?.storeUrl && settings?.woo?.consumerKey && settings?.woo?.consumerSecret);
+
+    useEffect(() => {
+        if (!isLoading && !user) {
+            router.push('/login');
+        }
+    }, [user, isLoading, router]);
+
     const [input, setInput] = useState('');
     const [currentStep, setCurrentStep] = useState<ConversationStep>('name');
     const [currentMessage, setCurrentMessage] = useState(initialMessage);
@@ -215,6 +235,7 @@ export default function Home() {
                 body: JSON.stringify({
                     text: prompt,
                     overrides: overridesPayload,
+                    aiSettings: settings?.ai
                 }),
             });
 
@@ -247,6 +268,10 @@ export default function Home() {
 
     const handleUpload = async () => {
         if (!result?.product) return;
+        if (!settings?.woo?.storeUrl || !settings?.woo?.consumerKey || !settings?.woo?.consumerSecret) {
+            setError('Por favor configura tus credenciales de WooCommerce en Settings antes de subir el producto.');
+            return;
+        }
         setUploading(true);
         setUploadSuccess('');
         setError('');
@@ -255,7 +280,7 @@ export default function Home() {
             const response = await fetch('/api/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ product: result.product }),
+                body: JSON.stringify({ product: result.product, wooSettings: settings.woo }),
             });
 
             const data = await response.json();
@@ -282,10 +307,45 @@ export default function Home() {
         setInput('');
     };
 
+    if (isLoading || !user) {
+        return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    }
+
+    // If WooCommerce settings are incomplete and the user hasn't chosen to skip, show onboarding flow
+    if (!settingsComplete && !skipConfig) {
+        return (
+            <SettingsOnboarding onClose={() => setSkipConfig(true)} />
+        );
+    }
+
     return (
         <main className="chat-container">
             <div className="chat-wrapper">
                 <Header />
+                {/* User Controls */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                    <span style={{ fontSize: '0.875rem', color: '#718096' }}>
+                        Welcome, <strong style={{ color: '#2d3748' }}>{user.name}</strong>
+                    </span>
+                    <button
+                        onClick={() => setIsSettingsOpen(true)}
+                        className="btn btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.875rem', fontSize: '0.875rem' }}
+                    >
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Settings
+                    </button>
+                    <button
+                        onClick={logout}
+                        className="btn btn-secondary"
+                        style={{ padding: '0.5rem 0.875rem', fontSize: '0.875rem', color: '#e53e3e' }}
+                    >
+                        Logout
+                    </button>
+                </div>
 
                 <div className="chat-content">
                     <ChatInterface
@@ -311,6 +371,7 @@ export default function Home() {
                     )}
                 </div>
             </div>
+            <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
         </main>
     );
 }

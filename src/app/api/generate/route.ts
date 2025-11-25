@@ -42,10 +42,10 @@ const mergeOverrides = (product: Product, overrides?: Overrides): Product => {
         overrides.dimensions.length || overrides.dimensions.width || overrides.dimensions.height
     )
         ? {
-              length: overrides.dimensions.length,
-              width: overrides.dimensions.width,
-              height: overrides.dimensions.height,
-          }
+            length: overrides.dimensions.length,
+            width: overrides.dimensions.width,
+            height: overrides.dimensions.height,
+        }
         : undefined;
     const sanitizedWeight = overrides.weight?.trim();
     const sanitizedSku = overrides.sku?.trim();
@@ -79,13 +79,13 @@ const mergeOverrides = (product: Product, overrides?: Overrides): Product => {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { text, overrides } = body as { text?: string; overrides?: Overrides };
+        const { text, overrides, aiSettings } = body;
 
         if (!text) {
             return NextResponse.json({ error: 'Text is required' }, { status: 400 });
         }
 
-        const product = await parseProductDescription(text);
+        const product = await parseProductDescription(text, aiSettings);
 
         if (!product) {
             return NextResponse.json({ error: 'Failed to parse product' }, { status: 500 });
@@ -95,8 +95,11 @@ export async function POST(request: Request) {
         const csv = generateCSV([finalProduct]);
 
         return NextResponse.json({ product: finalProduct, csv });
-    } catch (error) {
-        console.error('API Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    } catch (error: any) {
+        console.error('API Error in generate route:', error);
+        return NextResponse.json({
+            error: error.message || 'Internal Server Error',
+            details: error.toString()
+        }, { status: 500 });
     }
 }
